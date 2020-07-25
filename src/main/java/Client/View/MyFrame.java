@@ -100,8 +100,4 @@ public class MyFrame extends JFrame {
         return boardPanel;
     }
 
-    public static void main(String[] args) {
-        MyFrame myFrame = MyFrame.getInstance();
-    }
-
 }
