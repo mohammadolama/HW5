@@ -1,5 +1,7 @@
-package Server.Controller;
+package Server.Model;
 
+import Server.Controller.ClientHandler;
+import Server.Controller.Server;
 import Server.Model.Player;
 
 import java.io.PrintWriter;

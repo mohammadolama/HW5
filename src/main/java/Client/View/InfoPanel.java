@@ -1,6 +1,8 @@
 package Client.View;
 
 import Client.Model.Player;
+import Client.View.Configs.Config;
+import Client.View.Configs.ConfigsLoader;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,18 +12,19 @@ import java.net.Socket;
 
 public class InfoPanel extends JPanel implements ActionListener {
 
-    private Player player;
-    private Socket socket;
-    private JButton back;
+    private final Player player;
+    private final Socket socket;
+    private final JButton back;
+    private final Config config = ConfigsLoader.getInstance().getConfig();
 
-    public InfoPanel(Socket socket  , Player player){
-        this.socket=socket;
+    public InfoPanel(Socket socket, Player player) {
+        this.socket = socket;
         this.player = player;
 
         setLayout(null);
 
-        back=new JButton("back");
-        back.setBounds(680,700,80,30);
+        back = new JButton("back");
+        back.setBounds(config.getBackX(), config.getBackY(), config.getButtonWidth(), config.getButtonHeight());
         back.setFocusable(false);
         back.addActionListener(this);
         add(back);

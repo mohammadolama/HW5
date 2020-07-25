@@ -1,50 +1,42 @@
 package Client.View;
 
 import Client.Controller.RequestHandler;
-import Client.Model.Player;
 import Client.Model.PlayerModel;
+import Client.View.Configs.Config;
+import Client.View.Configs.ConfigsLoader;
+
 import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.Socket;
 import java.util.*;
-import java.util.List;
-import java.util.Map.Entry;
 
 public class ScorePanel extends JPanel implements ActionListener {
 
     private ArrayList<PlayerModel> list;
-    private String scoreBoard = "ScoreBoard";
-    private String emptyScoreBoard = "ScoreBoard is empty .";
-    private JButton back;
-    private JScrollPane scrollPane;
-    private JTable jTable;
-    private Timer timer;
+    private final JButton back;
     Font font1 = new Font("Serif", Font.BOLD, 50);
 
-    private Socket socket;
-    private Player player;
+    private final Socket socket;
+    private final Config config = ConfigsLoader.getInstance().getConfig();
 
-    public ScorePanel(ArrayList<PlayerModel> list , Socket socket) {
-        this.list=list;
+    public ScorePanel(ArrayList<PlayerModel> list, Socket socket) {
+        this.list = list;
         this.socket = socket;
-        timer=new Timer(5000 , al);
+        Timer timer = new Timer(5000, al);
         timer.start();
 
         setLayout(null);
-        setSize(800, 800);
-        setPreferredSize(new Dimension(800, 800));
+        setSize(config.getFrameWidth(), config.getFrameHeight());
+        setPreferredSize(new Dimension(config.getFrameWidth(), config.getFrameHeight()));
 
         initTable();
 
-        back=new JButton("back");
-        back.setBounds(680,700,80,30);
+        back = new JButton("back");
+        back.setBounds(config.getBackX(), config.getBackY(), config.getButtonWidth(), config.getButtonHeight());
         back.setFocusable(false);
         back.addActionListener(this);
         add(back);
@@ -57,15 +49,14 @@ public class ScorePanel extends JPanel implements ActionListener {
         Graphics2D g = (Graphics2D) gr;
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         FontMetrics fontMetrics = g.getFontMetrics(font1);
+        String scoreBoard = "ScoreBoard";
         int width = fontMetrics.stringWidth(scoreBoard);
         g.setFont(font1);
-        g.drawString(scoreBoard, (800 - width) / 2, 100);
-        if (list != null){
-        }
+        g.drawString(scoreBoard, (-width) / 2, 100);
     }
 
 
-    private void sortList(ArrayList<PlayerModel> list){
+    private void sortList(ArrayList<PlayerModel> list) {
         list.sort(Comparator.comparing(PlayerModel::getScore).thenComparing(PlayerModel::getUsername));
         this.list = list;
     }
@@ -73,40 +64,36 @@ public class ScorePanel extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == back){
+        if (e.getSource() == back) {
             MyFrame.getInstance().createMenuPanel(socket);
         }
     }
 
-    private ActionListener al = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            initTable();
-            revalidate();
-        }
+    private final ActionListener al = e -> {
+        initTable();
+        revalidate();
     };
 
 
-    private void initTable(){
+    private void initTable() {
         this.list = RequestHandler.getInstance(null).scoreBoard();
         sortList(this.list);
-        String col[] = {"UserName" , "Online Status" , "Score"};
-        DefaultTableModel tableModel = new DefaultTableModel(col , 0);
+        String[] col = {"UserName", "Online Status", "Score"};
+        DefaultTableModel tableModel = new DefaultTableModel(col, 0);
 
-        for (int i = list.size()-1 ; i >=0 ; i--) {
-            Object[] obj = {"  "+list.get(i).getUsername() , list.get(i).isOnline()?"  Online  " : "  Offline  " ,"  "+ list.get(i).getScore()};
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Object[] obj = {"  " + list.get(i).getUsername(), list.get(i).isOnline() ? "  Online  " : "  Offline  ", "  " + list.get(i).getScore()};
             tableModel.addRow(obj);
         }
-
-        jTable = new JTable(tableModel);
+        JTable jTable = new JTable(tableModel);
         jTable.setFont(new Font("Serif", Font.BOLD, 25));
         jTable.setRowHeight(40);
         jTable.setFocusable(false);
-        jTable.setPreferredSize(new Dimension(500, 500));
-        scrollPane = new JScrollPane(jTable);
+        jTable.setPreferredSize(new Dimension(config.getTableSize(), config.getTableSize()));
+        JScrollPane scrollPane = new JScrollPane(jTable);
         scrollPane.setWheelScrollingEnabled(true);
-        scrollPane.setPreferredSize(new Dimension(500, 500));
-        scrollPane.setBounds(200,200,500,500);
+        scrollPane.setPreferredSize(new Dimension(config.getTableSize(), config.getTableSize()));
+        scrollPane.setBounds(config.getTableX(), config.getTableY(), config.getTableSize(), config.getTableSize());
         add(scrollPane);
     }
 }

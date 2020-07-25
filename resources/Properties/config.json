@@ -1,0 +1,19 @@
+{
+  "frameWidth": 800,
+  "frameHeight": 800,
+  "buttonWidth": 80,
+  "buttonHeight": 30,
+  "backX": 680,
+  "backY": 700,
+  "tableSize": 500,
+  "tableX": 200,
+  "tableY": 200,
+  "menuBtnX": 300,
+  "menuBtnY": 200,
+  "menuBtnWidth": 200,
+  "menuBtnHeight": 50,
+  "userLabelX": 250,
+  "userLabelY": 200,
+  "userLabelWidth": 150,
+  "userLabelHeight": 27
+}

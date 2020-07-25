@@ -5,7 +5,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileReader;
@@ -16,16 +15,18 @@ import java.util.HashMap;
 public class LoginLogic {
 
     private static HashMap<String, String> accounts;
-    private Timer timer;
+    private static ObjectMapper objectMapper;
+    private final Timer timer;
 
-    private static LoginLogic loginLogic = new LoginLogic();
+    private static final LoginLogic loginLogic = new LoginLogic();
 
-    private LoginLogic(){
+    private LoginLogic() {
+        objectMapper = new ObjectMapper();
         loadAccounts();
-        timer = new Timer(10000  , al);
+        timer = new Timer(10000, al);
     }
 
-    public static LoginLogic getInstance(){
+    public static LoginLogic getInstance() {
         return loginLogic;
     }
 
@@ -43,12 +44,12 @@ public class LoginLogic {
     }
 
     public  String SignUp(String username, String password) {
-        if (accounts.containsKey("username")) {
+        if (accounts.containsKey(username)) {
             return "user already exist";
         } else {
             synchronized (accounts) {
                 Player player = new Player(username);
-                JsonBuilders.PlayerJsonBuilder(username , player);
+                JsonBuilders.PlayerJsonBuilder(username, player);
                 accounts.put(username, password);
                 updateAccounts();
             }
@@ -59,7 +60,6 @@ public class LoginLogic {
 
     private static synchronized void updateAccounts() {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             FileWriter fileWriter = new FileWriter(new File("resources/Data/accounts.json"));
             objectMapper.writeValue(fileWriter, accounts);
             fileWriter.close();
@@ -70,8 +70,6 @@ public class LoginLogic {
 
     private static synchronized void loadAccounts() {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            File file;
             FileReader fileReader = new FileReader(new File("resources/Data/accounts.json"));
             accounts = objectMapper.readValue(fileReader, new TypeReference<HashMap<String, String > >() {});
         } catch (IOException e) {
@@ -80,10 +78,5 @@ public class LoginLogic {
 
     }
 
-    ActionListener al= new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            loadAccounts();
-        }
-    };
+    ActionListener al = e -> loadAccounts();
 }

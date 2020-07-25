@@ -1,8 +1,9 @@
 package Client.View;
 
-import Client.Controller.Request;
 import Client.Controller.RequestHandler;
 import Client.Model.Message;
+import Client.View.Configs.Config;
+import Client.View.Configs.ConfigsLoader;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,26 +13,28 @@ import java.net.Socket;
 
 public class BoardPanel extends JPanel {
 
-    private Socket socket;
+    private final Socket socket;
 
-    private String friendly;
-    private String opponent;
-    private String opponentName;
+    private final String friendly;
+    private final String opponent;
+    private final String opponentName;
     private String ServerMessage = "Wait for opponent";
     private final Object object = new Object();
+    private final Config config = ConfigsLoader.getInstance().getConfig();
 
     private boolean ourTurn;
-    private String [][]values = new String[7][7];
-    private JButton[][] buttons = new JButton[7][7];
-    public BoardPanel(Socket socket , String friendly , String opponent , String opponentName){
+    private String[][] values = new String[7][7];
+    private final JButton[][] buttons = new JButton[7][7];
+
+    public BoardPanel(Socket socket, String friendly, String opponent, String opponentName) {
         this.socket = socket;
         this.friendly = friendly;
-        this . opponent = opponent;
+        this.opponent = opponent;
         this.opponentName = opponentName;
         ourTurn = friendly.equals("X");
         setLayout(null);
-        setSize(800,800);
-        setPreferredSize(new Dimension(800,800));
+        setSize(config.getFrameWidth(), config.getFrameHeight());
+        setPreferredSize(new Dimension(config.getFrameWidth(), config.getFrameHeight()));
         createButtons();
     }
 
@@ -57,7 +60,7 @@ public class BoardPanel extends JPanel {
         ((Graphics2D) gr).setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING , RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         gr.setFont(new Font("Serif" , Font.BOLD , 30));
         g.setColor(Color.white);
-        gr.fillRect(0,0,800,800);
+        gr.fillRect(0, 0, config.getFrameWidth(), config.getFrameHeight());
         g.setColor(Color.BLACK);
         g.drawString(friendly , 50 , 50);
 
@@ -74,7 +77,7 @@ public class BoardPanel extends JPanel {
             if (src.getText()==null || src.getText().equals("")){
                 if (ourTurn) {
                     src.setText(friendly);
-                    RequestHandler.getInstance(null).occupySpot(BoardPanel.this , src.getName());
+                    RequestHandler.getInstance(null).occupySpot(src.getName());
                     src.removeActionListener(al);
                 } else {
                     JOptionPane.showMessageDialog(BoardPanel.this, "It's not your Turn.");
@@ -86,41 +89,10 @@ public class BoardPanel extends JPanel {
         }
     };
 
-    Thread thread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            synchronized (object){
-                try {
-                    object.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        }
-    });
-
-//    public void getMessageFromServer(String message){
-//        if (message.equals("Your Turn")){
-//            ourTurn = true;
-//            ServerMessage = message;
-//        }else if (message.equals("Opponent Turn")){
-//            ourTurn = false;
-//            ServerMessage = message;
-//        }else {
-//            JOptionPane.showMessageDialog(BoardPanel.this , message);
-//        }
-//    }
-
-
     public void processMessage(Message message) {
         values = message.getValue();
         updateButtons();
-        if (message.isYourTurn()){
-            ourTurn=true;
-        }else {
-            ourTurn = false;
-        }
+        ourTurn = message.isYourTurn();
         if (message.getMessage().equalsIgnoreCase("you win") || message.getMessage().equalsIgnoreCase("you lose") || message.getMessage().equalsIgnoreCase("tie")){
             int i = JOptionPane.showConfirmDialog(this , message.getMessage() ,"Game finished" , JOptionPane.DEFAULT_OPTION );
             if (i == 0){

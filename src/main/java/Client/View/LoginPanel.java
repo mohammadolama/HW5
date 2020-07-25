@@ -1,9 +1,8 @@
 package Client.View;
 
 import Client.Controller.RequestHandler;
-import Client.Model.AuthToken;
+import Client.View.Configs.Config;
 import Client.View.Configs.ConfigsLoader;
-import Client.View.Configs.LoginConfig;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,24 +14,20 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
 
     private JButton source;
 
-    private JButton createAccount;
-    private JButton enter;
-    private JLabel userLabel;
-    private JLabel passLabel;
-    private JLabel error;
-    private JTextField userField;
-    private JTextField passField;
-    private LoginConfig config;
-    private Socket socket;
-    private AuthToken authToken;
+    private final JButton createAccount;
+    private final JButton enter;
+    private final JTextField userField;
+    private final JTextField passField;
+    private final Socket socket;
+    private Config config;
 
     private void initConfig() {
-        config = ConfigsLoader.getInstance().getLoginConfig();
+        config = ConfigsLoader.getInstance().getConfig();
     }
 
 
     public LoginPanel(Socket socket) {
-        this.socket=socket;
+        this.socket = socket;
         initConfig();
         setLayout(null);
         createAccount = new JButton("Create new Account");
@@ -41,17 +36,11 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
         enter = new JButton("Enter");
         enter.setFont(Constants.f2.deriveFont(20.0f));
 
-        userLabel = new JLabel("Username : ");
+        JLabel userLabel = new JLabel("Username : ");
         userLabel.setFont(Constants.f2);
-//        userLabel.setForeground(Color.YELLOW);
 
-        passLabel = new JLabel("Password  : ");
+        JLabel passLabel = new JLabel("Password  : ");
         passLabel.setFont(Constants.f2);
-//        passLabel.setForeground(Color.YELLOW);
-
-        error = new JLabel("");
-        error.setFont(Constants.f2);
-        error.setForeground(Color.RED);
 
         userField = new JTextField(10);
         passField = new JTextField(10);
@@ -68,11 +57,10 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
         enter.addMouseListener(this);
 
 
-        userField.setBounds(config.getUserlabelX() + 150, config.getUserLabelY(), config.getUserLabelWidth(), config.getUserLabelHeight());
-        passField.setBounds(config.getUserlabelX() + 150, config.getUserLabelY() + 50, config.getUserLabelWidth(), config.getUserLabelHeight());
-        userLabel.setBounds(config.getUserlabelX(), config.getUserLabelY(), config.getUserLabelWidth(), config.getUserLabelHeight());
-        passLabel.setBounds(config.getUserlabelX(), config.getUserLabelY() + 50, config.getUserLabelWidth(), config.getUserLabelHeight());
-        error.setBounds(900, 300, 300, 27);
+        userField.setBounds(config.getUserLabelX() + 150, config.getUserLabelY(), config.getUserLabelWidth(), config.getUserLabelHeight());
+        passField.setBounds(config.getUserLabelX() + 150, config.getUserLabelY() + 50, config.getUserLabelWidth(), config.getUserLabelHeight());
+        userLabel.setBounds(config.getUserLabelX(), config.getUserLabelY(), config.getUserLabelWidth(), config.getUserLabelHeight());
+        passLabel.setBounds(config.getUserLabelX(), config.getUserLabelY() + 50, config.getUserLabelWidth(), config.getUserLabelHeight());
         enter.setBounds(300, 350, 250, 30);
         createAccount.setBounds(300, 400, 250, 30);
 
@@ -83,12 +71,6 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
         add(passLabel);
         add(enter);
         add(createAccount);
-        add(error);
-    }
-
-    @Override
-    protected void paintComponent(Graphics gd) {
-        Graphics2D g = (Graphics2D) gd;
     }
 
     @Override
@@ -104,7 +86,6 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
                 return;
             }
             RequestHandler.getInstance(socket).SignUp(this,userField.getText() , passField.getText());
-//            RequestHandler.SendRequest.SignUp.response(userField.getText(), passField.getText());
         }
     }
 
@@ -132,20 +113,6 @@ public class LoginPanel extends JPanel implements ActionListener, MouseListener 
     @Override
     public void mouseExited(MouseEvent e) {
         source.setBackground(Color.WHITE);
-    }
-
-    public JLabel getError() {
-        return error;
-    }
-
-
-    public JTextField getUserField() {
-        return userField;
-    }
-
-
-    public JTextField getPassField() {
-        return passField;
     }
 
 }

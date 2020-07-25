@@ -4,12 +4,18 @@ public class Message {
 
     private boolean yourTurn;
     private String message;
-    private String [][] value;
+    private String[][] value;
+    private String token;
 
     public Message(boolean yourTurn, String message, String[][] value) {
         this.yourTurn = yourTurn;
         this.message = message;
         this.value = value;
+    }
+
+    public Message(String message, String token) {
+        this.message = message;
+        this.token = token;
     }
 
     public Message() {
@@ -37,5 +43,13 @@ public class Message {
 
     public void setValue(String[][] value) {
         this.value = value;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

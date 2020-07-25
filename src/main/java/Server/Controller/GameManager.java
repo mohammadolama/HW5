@@ -3,15 +3,13 @@ package Server.Controller;
 import Server.Model.Message;
 import Server.Model.Player;
 
-import java.io.PrintWriter;
-import java.util.Scanner;
 
 public class GameManager extends Thread {
 
-    private Server server;
+    private final Server server;
 
-    private Player player1;
-    private Player player2;
+    private final Player player1;
+    private final Player player2;
 
     private Player currentPlayer;
 
@@ -19,11 +17,10 @@ public class GameManager extends Thread {
 
     private final Object object = new Object();
 
-    private ClientHandler clientHandler1;
-    private ClientHandler clientHandler2;
+    private final ClientHandler clientHandler1;
+    private final ClientHandler clientHandler2;
 
-    private String[][] values = new String[7][7];
-    private boolean player1Turn = true;
+    private final String[][] values = new String[7][7];
 
     private boolean isFinished = false;
 
@@ -47,14 +44,11 @@ public class GameManager extends Thread {
             synchronized (object) {
                 try {
                     object.wait();
-                    System.err.println("notify");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            System.err.println(isFinished);
         }
-        System.out.println("Game finished : winner is " + winner);
 
         if (winner == player1) {
             clientHandler1.notifyClient(new Message(false, "You win", values));
@@ -104,9 +98,7 @@ public class GameManager extends Thread {
                 }
             }
         }
-        System.err.println("checking .... ");
         if (winner != null) {
-            System.err.println("game finished;");
             isFinished = true;
         } else {
             boolean flag = false;
@@ -144,12 +136,6 @@ public class GameManager extends Thread {
 
 
     public String OccupySpot(Player player, int i, int j) {
-//        if (player != currentPlayer) {
-//            return "It's Not your Turn.";
-//        }
-//        if (values[i][j] != null) {
-//            return "Spot is occupied.";
-//        }
         if (player == player1) {
             values[i][j] = "X";
             Message message1 = new Message(false, "Wait for opponent move ... ", values);

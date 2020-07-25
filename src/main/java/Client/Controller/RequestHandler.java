@@ -1,13 +1,11 @@
 package Client.Controller;
 
-import Client.Model.AuthToken;
 import Client.Model.Message;
 import Client.Model.Player;
 import Client.Model.PlayerModel;
 import Client.View.BoardPanel;
 import Client.View.LoginPanel;
 import Client.View.MyFrame;
-import Server.Controller.Requests;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
@@ -21,17 +19,21 @@ import java.util.Scanner;
 public class RequestHandler {
 
     private static RequestHandler requestHandler;
-
-    private Socket socket;
+    private ObjectMapper objectMapper;
+    private final Socket socket;
     private Scanner scanner;
     private PrintWriter printWriter;
     private String token;
+    private ArrayList<String[][]> replay;
+
 
     private RequestHandler(Socket socket) {
         this.socket = socket;
         try {
             scanner = new Scanner(socket.getInputStream());
             printWriter = new PrintWriter(socket.getOutputStream(), true);
+            objectMapper = new ObjectMapper();
+            replay = new ArrayList<>();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -45,101 +47,132 @@ public class RequestHandler {
     }
 
     public void Login(LoginPanel loginPanel, String username, String password) {
-        printWriter.println("login");
-        if (scanner.nextLine().equalsIgnoreCase("ready")) {
-            printWriter.println(username);
-            printWriter.println(password);
-            String res = scanner.nextLine();
-            if (res.equals("wrong password")) {
-                JOptionPane.showMessageDialog(loginPanel, "wrong password .");
-            } else if (res.equals("user not found")) {
-                JOptionPane.showMessageDialog(loginPanel, "user not found");
+        try {
+            String message = objectMapper.writeValueAsString(new Message("login", null));
+            printWriter.println(message);
+            String resp = scanner.nextLine();
+            if (resp.equalsIgnoreCase("ready")) {
+                printWriter.println(username);
+                printWriter.println(password);
+                String res = scanner.nextLine();
+                if (res.equals("wrong password")) {
+                    JOptionPane.showMessageDialog(loginPanel, "wrong password .");
+                } else if (res.equals("user not found")) {
+                    JOptionPane.showMessageDialog(loginPanel, "user not found");
+                } else {
+                    token = res;
+                    MyFrame.getInstance().createMenuPanel(socket);
+                }
             } else {
-                token = res;
-                MyFrame.getInstance().createMenuPanel(socket);
-                System.out.println("login complete");
+                JOptionPane.showMessageDialog(loginPanel, "Server error");
             }
-        } else {
-            JOptionPane.showMessageDialog(loginPanel, "Server Error.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public void SignUp(LoginPanel loginPanel, String username, String password) {
-        printWriter.println("account");
-        if (scanner.nextLine().equalsIgnoreCase("ready")) {
-            printWriter.println(username);
-            printWriter.println(password);
-            String res = scanner.nextLine();
-            JOptionPane.showMessageDialog(loginPanel, res);
+        try {
+            String message = objectMapper.writeValueAsString(new Message("account", null));
+            printWriter.println(message);
+            String resp = scanner.nextLine();
+            if (resp.equalsIgnoreCase("ready")) {
+                printWriter.println(username);
+                printWriter.println(password);
+                String res = scanner.nextLine();
+                JOptionPane.showMessageDialog(loginPanel, res);
+            } else {
+                JOptionPane.showMessageDialog(loginPanel, "Server Error");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public ArrayList<PlayerModel> scoreBoard() {
-        printWriter.println("scoreboard");
-        String result = scanner.nextLine();
-        ObjectMapper objectMapper = new ObjectMapper();
-        ArrayList<PlayerModel> list = new ArrayList<>() ;
+        ArrayList<PlayerModel> list = new ArrayList<>();
         try {
-             list =objectMapper.readValue(result , new TypeReference<ArrayList<PlayerModel>>(){});
+            String message = objectMapper.writeValueAsString(new Message("scoreboard", token));
+            printWriter.println(message);
+            String resp = scanner.nextLine();
+            if (resp.equalsIgnoreCase("ready")) {
+                String result = scanner.nextLine();
+                list = objectMapper.readValue(result, new TypeReference<ArrayList<PlayerModel>>() {
+                });
+            } else {
+                JOptionPane.showMessageDialog(MyFrame.getInstance(), resp);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return list;
     }
 
-    public Player info(){
+    public Player info() {
         Player player = null;
         try {
-            printWriter.println("info");
-            String result = scanner.nextLine();
-            ObjectMapper objectMapper = new ObjectMapper();
-            player = objectMapper.readValue(result, Player.class);
-
-        }catch (IOException e){
+            String message = objectMapper.writeValueAsString(new Message("info", token));
+            printWriter.println(message);
+            String resp = scanner.nextLine();
+            if (resp.equalsIgnoreCase("ready")) {
+                String result = scanner.nextLine();
+                player = objectMapper.readValue(result, Player.class);
+            } else {
+                JOptionPane.showMessageDialog(MyFrame.getInstance(), resp);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return player;
     }
 
-    public void playGame(){
+    public void playGame() {
         new Thread(() -> {
-            printWriter.println("play");
-            String friendly = scanner.nextLine();
-            String opponent = scanner.nextLine();
-            String opponentName = scanner.nextLine();
-            BoardPanel boardPanel = MyFrame.getInstance().createGamePanel(socket , friendly , opponent ,opponentName);
-            while (true){
-                try {
-                    String t = scanner.nextLine();
-                    System.out.println(t);
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    Message message = objectMapper.readValue(t, Message.class);
-                    boardPanel.processMessage(message);
-                    if (message.getMessage().equalsIgnoreCase("you win") ||
-                            message.getMessage().equalsIgnoreCase("you lose") ||
-                            message.getMessage().equalsIgnoreCase("tie")){
-                        break;
+            try {
+                String message1 = objectMapper.writeValueAsString(new Message("play", token));
+                printWriter.println(message1);
+                String resp = scanner.nextLine();
+                if (resp.equalsIgnoreCase("ready")) {
+                    String friendly = scanner.nextLine();
+                    String opponent = scanner.nextLine();
+                    String opponentName = scanner.nextLine();
+                    BoardPanel boardPanel = MyFrame.getInstance().createGamePanel(socket, friendly, opponent, opponentName);
+                    replay = new ArrayList<>();
+                    while (true) {
+                        try {
+                            String t = scanner.nextLine();
+                            Message message = objectMapper.readValue(t, Message.class);
+                            replay.add(message.getValue());
+                            boardPanel.processMessage(message);
+                            if (message.getMessage().equalsIgnoreCase("you win") ||
+                                    message.getMessage().equalsIgnoreCase("you lose") ||
+                                    message.getMessage().equalsIgnoreCase("tie")) {
+                                break;
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }catch (IOException e){
-                    e.printStackTrace();
+                } else {
+                    JOptionPane.showMessageDialog(MyFrame.getInstance(), resp);
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }).start();
     }
 
-    public void occupySpot(BoardPanel boardPanel , String index){
-        printWriter.println("index");
-        printWriter.println(index);
-//        String res = scanner.nextLine();
-//        boardPanel.getMessageFromServer(res);
+    public void occupySpot(String index) {
+        try {
+            String message = objectMapper.writeValueAsString(new Message("index", token));
+            printWriter.println(message);
+            printWriter.println(index);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-
-    public String waitForOpponent(){
-        String res = scanner.nextLine();
-        if (res.equals("Your Turn")) {
-        }
-
-        return res;
+    public ArrayList<String[][]> getReplay() {
+        return replay;
     }
 }

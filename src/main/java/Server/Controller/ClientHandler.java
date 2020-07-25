@@ -1,8 +1,8 @@
 package Server.Controller;
 
-import Server.Model.AuthToken;
 import Server.Model.Message;
 import Server.Model.Player;
+import Server.Model.Triplet;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.*;
@@ -11,109 +11,106 @@ import java.util.Scanner;
 
 public class ClientHandler extends Thread {
 
-    private Server server;
+    private final Server server;
     private GameManager gameManager;
-    private Socket socket;
-    private AuthToken token;
+    private final Socket socket;
     private Player player;
     private PrintWriter output;
     private Scanner input;
-    private LoginLogic loginLogic = LoginLogic.getInstance();
+    private final LoginLogic loginLogic = LoginLogic.getInstance();
+    private final ObjectMapper objectMapper;
 
 
-    public ClientHandler(Server server, Socket socket, AuthToken token) {
+    public ClientHandler(Server server, Socket socket) {
         this.server = server;
         this.socket = socket;
-        this.token = token;
+        objectMapper = new ObjectMapper();
     }
 
     @Override
     public void run() {
-        System.out.println("the game has been started from the server ...... ");
         try {
-            System.out.println("here");
             input = new Scanner(socket.getInputStream());
-            System.out.println("input created ... ");
             output = new PrintWriter(socket.getOutputStream(), true);
-            System.out.println("output created ....");
             while (socket.isConnected()) {
-                System.out.println("Wait for req ...");
-                String request = input.nextLine();
-                System.out.println("Req recieved : " + request);
-                switch (request) {
+                Message message = getMessageOf(input.nextLine());
+                switch (message.getMessage()) {
                     case "scoreboard":
-                        ScoreBoard();
+                        ScoreBoard(message);
                         break;
                     case "login":
-                        Login();
+                        Login(message);
                         break;
                     case "account":
-                        SignUp();
+                        SignUp(message);
                         break;
                     case "info":
-                        Info();
+                        Info(message);
                         break;
                     case "play":
-                        putInList();
+                        putInList(message);
                         break;
                     case "index":
-                        occupyIndex();
+                        occupyIndex(message);
                         break;
                 }
-                System.out.println("end of req ...");
             }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            System.err.println("socket is close ...");
             server.setOffline(player);
         }
     }
 
-    private void occupyIndex() {
+    private void occupyIndex(Message message) {
         String index = input.nextLine();
-        int i = Integer.parseInt(index)/10;
-        int j = Integer.parseInt(index) %10;
-        System.out.println(gameManager);
-        String result = gameManager.OccupySpot(this.player , i , j);
-//        output.println(result);
+        int i = Integer.parseInt(index) / 10;
+        int j = Integer.parseInt(index) % 10;
+        gameManager.OccupySpot(this.player, i, j);
     }
 
-    private void Info() {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String res = objectMapper.writeValueAsString(this.player);
-            System.out.println(res);
-            output.println(res);
-        }catch (IOException e){
-            e.printStackTrace();
+    private void Info(Message message) {
+        if (server.validateToken(message.getToken())) {
+            output.println("ready");
+            try {
+                String res = objectMapper.writeValueAsString(this.player);
+                output.println(res);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            output.println("invalid token");
         }
     }
 
-    private void putInList() {
-        server.putInWaitList(new Triplet(player , input , output , this ));
+    private void putInList(Message message) {
+        if (server.validateToken(message.getToken())) {
+            output.println("ready");
+            server.putInWaitList(new Triplet(player, input, output, this));
+        } else {
+            output.println("invalid token");
+        }
     }
 
-    private void Login() {
+    private void Login(Message message) {
         output.println("ready");
         String username = input.nextLine();
         String password = input.nextLine();
         String res = loginLogic.Login(username, password);
         if (res.equals("ok")) {
-            String token = server.generateToken();
+            String token = AuthTokenGenerator.generateToken();
             Player player = JsonReaders.PlayerJsonReader(username);
             player.setOnline(true);
             player.setToken(token);
             server.addOnlinePlayer(player);
             this.player = player;
             output.println(token);
-            System.out.println(token);
         } else {
             output.println(res);
         }
     }
 
-    private void SignUp() {
+    private void SignUp(Message message) {
         output.println("ready");
         String username = input.nextLine();
         String password = input.nextLine();
@@ -121,33 +118,44 @@ public class ClientHandler extends Thread {
         output.println(res);
     }
 
-    private void ScoreBoard() {
-        String result = server.PlayerStatus();
-        output.println(result);
-    }
-
-
-    public void notifyClient(Message message){
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String res = objectMapper.writeValueAsString(message);
-            output.println(res);
-        }catch (IOException e){
-            e.printStackTrace();
+    private void ScoreBoard(Message message) {
+        if (server.validateToken(message.getToken())) {
+            output.println("ready");
+            String result = server.PlayerStatus();
+            output.println(result);
+        } else {
+            output.println("invalid token");
         }
     }
 
-    public GameManager getGameManager() {
-        return gameManager;
+
+    public void notifyClient(Message message) {
+        try {
+            String res = objectMapper.writeValueAsString(message);
+            output.println(res);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setGameManager(GameManager gameManager) {
         this.gameManager = gameManager;
     }
 
-    public void notification(String friendly ,String opponent , String opponentName){
+    public void notification(String friendly, String opponent, String opponentName) {
         output.println(friendly);
         output.println(opponent);
         output.println(opponentName);
     }
+
+    public Message getMessageOf(String string) {
+        Message message = null;
+        try {
+            message = objectMapper.readValue(string, Message.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return message;
+    }
+
 }

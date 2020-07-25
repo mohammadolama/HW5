@@ -35,13 +35,8 @@ public class JsonReaders {
                 map.put(player.getUsername() , player);
             }
         }catch (IOException e){
-
+        e.printStackTrace();
         }
         return map;
     }
-
-    public static void load(){
-
-    }
-
 }
